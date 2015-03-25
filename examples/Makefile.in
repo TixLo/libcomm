@@ -1,0 +1,87 @@
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+AR          = @AR@
+ARFLAGS     = -rc
+LN_S        = @LN_S@
+MKDIR_P     = @MKDIR_P@
+RANLIB      = @RANLIB@
+
+CPPFLAGS   += \
+    -I../src/server \
+    -I../src/server/auth \
+    -I../src/server/auth/basic \
+    -I../src/server/auth/oauth2 \
+    -I../src/server/auth/storage \
+    -I../src/logs \
+    -I../src/utils \
+    -I../src/client \
+    -I../lib/curl/include \
+    -I../lib/libasyncd/include/asyncd \
+    -I../lib/libasyncd/lib/qlibc/include \
+    -I../lib/libasyncd/lib/qlibc/src/internal \
+    -I../lib/libasyncd/lib/qlibc/src/internal/md5 \
+    -I../lib/libasyncd/lib/qlibc/include/qlibc \
+    -I../lib/libasyncd/lib/qlibc/include
+
+LIBS        += ../src/.libs/libcomm.a \
+               -lssl \
+               -lcrypto \
+               -lpthread \
+               -levent \
+               -levent_openssl \
+               -levent_pthreads \
+               -lm \
+               -lz \
+               -ldl
+
+CC          = gcc
+CXX         = g++
+CFLAGS      = -Wall -fPIC -g -O2
+CPPFLAGS    += -I/usr/include -I/usr/local/include -D_GNU_SOURCE 
+
+
+TARGETS     = \
+              hello_http_server \
+              hello_http_client \
+              hello_http_async_client \
+              hello_https_server \
+              hello_https_client \
+              http_basic_auth_client \
+              http_basic_auth_server \
+              http_oauth2_auth_server \
+              http_oauth2_auth_client
+
+all: $(TARGETS)
+
+hello_http_server: hello_http_server.o    
+	$(CXX) $(LDFLAGS) -o $@ hello_http_server.o $(LIBS)
+
+hello_http_client: hello_http_client.o
+	$(CXX) $(LDFLAGS) -o $@ hello_http_client.o $(LIBS) 
+
+hello_https_server: hello_https_server.o    
+	$(CXX) $(LDFLAGS) -o $@ hello_https_server.o $(LIBS)
+
+hello_https_client: hello_https_client.o
+	$(CXX) $(LDFLAGS) -o $@ hello_https_client.o $(LIBS) 
+
+hello_http_async_client: hello_http_async_client.o
+	$(CXX) $(LDFLAGS) -o $@ hello_http_async_client.o $(LIBS) 
+
+http_basic_auth_client: http_basic_auth_client.o
+	$(CXX) $(LDFLAGS) -o $@ http_basic_auth_client.o $(LIBS) 
+
+http_basic_auth_server: http_basic_auth_server.o
+	$(CXX) $(LDFLAGS) -o $@ http_basic_auth_server.o $(LIBS) 
+
+http_oauth2_auth_server: http_oauth2_auth_server.o
+	$(CXX) $(LDFLAGS) -o $@ http_oauth2_auth_server.o $(LIBS) 
+
+http_oauth2_auth_client: http_oauth2_auth_client.o
+	$(CXX) $(LDFLAGS) -o $@ http_oauth2_auth_client.o $(LIBS) 
+  
+clean:
+	rm -f *.o $(TARGETS)
+
+.cpp.o:
+	$(CXX) -c $(CFLAGS) $(CPPFLAGS) -o $@ $<

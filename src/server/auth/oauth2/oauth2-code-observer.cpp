@@ -1,0 +1,23 @@
+#include "oauth2-code-observer.h"
+#include "comm-logs.h"
+#include "url-query.h"
+
+using namespace std;
+///////////////////////////////////////////////////////////////
+// private
+///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////
+// public
+///////////////////////////////////////////////////////////////
+OAuth2CodeObserver::OAuth2CodeObserver(const char *path, HttpMethod method) : PageObserver(path, method){
+
+}
+
+OAuth2CodeObserver::~OAuth2CodeObserver(){
+
+}
+
+void OAuth2CodeObserver::Listen(char *path, UrlQuery &query, void *field, int field_len){
+
+}

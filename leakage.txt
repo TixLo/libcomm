@@ -1,0 +1,15 @@
+==5793== Memcheck, a memory error detector
+==5793== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==5793== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
+==5793== Command: ./src/CommServer
+==5793== Parent PID: 2595
+==5793== 
+==5793== 
+==5793== HEAP SUMMARY:
+==5793==     in use at exit: 0 bytes in 0 blocks
+==5793==   total heap usage: 568 allocs, 568 frees, 40,503 bytes allocated
+==5793== 
+==5793== All heap blocks were freed -- no leaks are possible
+==5793== 
+==5793== For counts of detected and suppressed errors, rerun with: -v
+==5793== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
