@@ -66,7 +66,7 @@ public:
 
     COMM_SYNTHESIZE(int, timeout, Timeout)
 
-    COMM_SYNTHESIZE(ClientObserver*, observer, Observer)
+    void SetObserver(ClientObserver* observer);
 
     bool Get(std::string url);
 
@@ -82,8 +82,10 @@ public:
 
     void ResetRecvBuf();
 
+    void CallResponse(std::string url, void *data, int len, int code);
+
 protected:
-    virtual void SetExtraHeaders(CURL *curl, struct curl_slist *headers);
+    virtual void SetExtraHeaders(CURL *curl, struct curl_slist **headers);
 
 private:
     bool SyncAction(std::string url, bool post_action, void *data, int data_len);
@@ -96,6 +98,8 @@ private:
                    void *data,
                    int data_len,
                    struct curl_slist **headers);
+
+    ClientObserver *observer;
 
     std::vector<CurlCmd*> cmds;
 

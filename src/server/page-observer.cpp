@@ -18,7 +18,8 @@ PageObserver::PageObserver(const char *path, HttpMethod method){
 }
 
 PageObserver::~PageObserver(){
-
+    if (response)
+        delete [] response;
 }
 
 void PageObserver::SetHeader(string header, string value){
@@ -27,3 +28,11 @@ void PageObserver::SetHeader(string header, string value){
 
     headers[header] = value;
 }
+
+void PageObserver::SetOnceHeader(string header, string value){
+    if (header.empty() || value.empty())
+        return;
+
+    once_headers[header] = value;
+}
+

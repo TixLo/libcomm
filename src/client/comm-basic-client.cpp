@@ -18,7 +18,7 @@ BasicClient::~BasicClient(){
 
 }
 
-void BasicClient::SetExtraHeaders(CURL *curl, struct curl_slist *headers){
+void BasicClient::SetExtraHeaders(CURL *curl, struct curl_slist **headers){
     Log("SetExtraHeaders");
 
     if (!curl)

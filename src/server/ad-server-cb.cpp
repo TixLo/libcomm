@@ -3,6 +3,7 @@
 #include "comm-logs.h"
 #include "page-control.h"
 #include "page-observer.h"
+#include "auth-basic-observer.h"
 #include "auth.h"
 
 using namespace std;
@@ -64,19 +65,31 @@ static int CommonDispatchHandler(HttpMethod method, short event, ad_conn_t *conn
     void *field = ad_http_get_content(conn, 0, 0);
 
     //
+    // get a specific observer
+    //
+    PageObserver *observer = control->GetObserver(method, path);
+    if (!observer){
+        return ServeNotImplementedHandler(event, conn, userdata);
+    }
+
+    //
     // check authorization
     //
     bool authorized = AuthorizingHeader(server, conn);
     if (!authorized){
-        return ServerUnauthorizedHandler(event, conn, userdata);
+        if (AuthBasicObserver* basic_observer = dynamic_cast<AuthBasicObserver*>(observer)) {
+            basic_observer->Unauthorized();
+        }
+        else{
+            return ServerUnauthorizedHandler(event, conn, userdata);
+        }
     }
 
     //
-    // find match observer
+    // notify observer
     // 
-    PageObserver *observer = control->Notify(method, path, query, field, field_length);
-    if (!observer){
-        return ServeNotImplementedHandler(event, conn, userdata);
+    if (authorized){
+        control->Notify(observer, path, query, field, field_length);
     }
 
     //
@@ -85,10 +98,19 @@ static int CommonDispatchHandler(HttpMethod method, short event, ad_conn_t *conn
     map<string, string> headers = observer->GetHeaders();
     map<string, string>::iterator iter;
     for (iter = headers.begin(); iter != headers.end(); ++iter) {
-        Log("header : (%s, %s)", iter->first.c_str(), iter->second.c_str());
+        Evt("header : (%s, %s)", iter->first.c_str(), iter->second.c_str());
         ad_http_set_response_header(conn, iter->first.c_str(), iter->second.c_str());
     }
-    headers.clear();
+
+    //
+    // add once header
+    //
+    map<string, string> once_headers = observer->GetOnceHeaders();
+    for (iter = once_headers.begin(); iter != once_headers.end(); ++iter) {
+        Evt("header : (%s, %s)", iter->first.c_str(), iter->second.c_str());
+        ad_http_set_response_header(conn, iter->first.c_str(), iter->second.c_str());
+    }
+    once_headers.clear();
 
     //
     // set response

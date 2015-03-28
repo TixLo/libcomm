@@ -10,6 +10,7 @@ The project is base on several open source projects.
   - curl : http://curl.haxx.se/
   - libasyncd : https://github.com/wolkykim/libasyncd/
   - libevent : https://github.com/libevent/libevent (only for Android)
+  - jsoncpp : https://github.com/open-source-parsers/jsoncpp
 
 
 ### Build on Linux 

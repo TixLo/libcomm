@@ -19,8 +19,11 @@ public:
     /** remove CommObserver to listen page data */
     void Detach(PageObserver *observer);
 
+    /** get a proper observer */
+    PageObserver* GetObserver(HttpMethod method, char *path);
+
     /** notify all observer */
-    PageObserver* Notify(HttpMethod method, char *path, char *query, void *field, int field_len);
+    void Notify(PageObserver* observer, char *path, char *query, void *field, int field_len);
 
 private:
     std::vector<PageObserver*> pages;

@@ -20,6 +20,10 @@ include $(top_srcdir)/lib/libasyncd/config.mak
 libcomm_la_SOURCES += $(SRC_LIBASYNCD_SRC)
 libcomm_la_CFLAGS += $(SRC_LIBASYNCD_INCLUDE)
 
+include $(top_srcdir)/lib/jsoncpp/config.mak
+libcomm_la_SOURCES += $(SRC_LIBJSONCPP_SRC)
+libcomm_la_CFLAGS += $(SRC_LIBSONCPP_INCLUDE)
+
 include $(top_srcdir)/lib/curl/config.mak
 libcomm_la_SOURCES += $(SRC_CURL_SRC)
 libcomm_la_CFLAGS += $(SRC_CURL_INCLUDE)

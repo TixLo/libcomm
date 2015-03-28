@@ -1,6 +1,6 @@
 #include "comm-server.h"
 #include "page-control.h"
-#include "page-observer.h"
+#include "auth-basic-observer.h"
 #include "auth-basic.h"
 #include "storage.h"
 
@@ -12,9 +12,9 @@
 //
 // TestObserver
 //
-class TestObserver : public PageObserver{
+class TestObserver : public AuthBasicObserver{
 public:
-    TestObserver(const char *path, HttpMethod method) : PageObserver(path, method){}
+    TestObserver(const char *path, HttpMethod method) : AuthBasicObserver(path, method){}
 
     void Listen(char *path, UrlQuery &query, void *field, int field_len){
         Log("listener , path : %s", path);
@@ -23,7 +23,7 @@ public:
         Log("listener , field : %d, %s", field_len, field);
 
         // set response's customized header
-        SetHeader("Custom", "xxx");
+        SetOnceHeader("Custom", "xxx");
 
         // set response data
         SetResponse(200, (void*)"hello", 5);
@@ -33,26 +33,6 @@ private:
 
 };
 
-//
-// IndexObserver
-//
-class IndexObserver : public PageObserver{
-public:
-    IndexObserver(const char *path, HttpMethod method) : PageObserver(path, method){}
-
-    void Listen(char *path, UrlQuery &query, void *field, int field_len){
-        Log("listener , path : %s", path);
-        Log("listener , p1 : %s", query.ParamForKey("p1").c_str());
-        Log("listener , p2 : %s", query.ParamForKey("p2").c_str());
-        Log("listener , field : %d, %s", field_len, field);
-
-        // set response data
-        SetResponse(200, (void*)"OK", 2);
-    }
-
-private:
-
-};
 /////////////////////////////////////////////////////////////////
 // Private
 /////////////////////////////////////////////////////////////////
@@ -101,9 +81,6 @@ int main(int argc, char **argv){
     TestObserver *test_observer = new TestObserver("/test", kGet);
     control->Attach(test_observer);
 
-    IndexObserver *index_observer = new IndexObserver("/index", kPost);
-    control->Attach(index_observer);
-
     server->Start();
 
     // delete server instance
@@ -111,6 +88,5 @@ int main(int argc, char **argv){
 
     // delete observer instances
     delete test_observer;
-    delete index_observer;
     delete auth;
 }

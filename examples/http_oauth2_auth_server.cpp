@@ -23,7 +23,7 @@ public:
         Log("listener , field : %d, %s", field_len, field);
 
         // set response's customized header
-        SetHeader("Custom", "xxx");
+        SetOnceHeader("Custom", "xxx");
 
         // set response data
         SetResponse(200, (void*)"hello", 5);

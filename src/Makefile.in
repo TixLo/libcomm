@@ -80,6 +80,7 @@ build_triplet = @build@
 host_triplet = @host@
 DIST_COMMON = $(srcdir)/./config.mak \
 	$(top_srcdir)/lib/libasyncd/config.mak \
+	$(top_srcdir)/lib/jsoncpp/config.mak \
 	$(top_srcdir)/lib/curl/config.mak $(srcdir)/Makefile.in \
 	$(srcdir)/Makefile.am $(top_srcdir)/depcomp
 subdir = src
@@ -122,15 +123,19 @@ am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libcomm_la_LIBADD =
 am__objects_1 = libcomm_la-comm-server.lo libcomm_la-ad-server-cb.lo \
-	libcomm_la-comm-logs.lo libcomm_la-util-openssl.lo \
-	libcomm_la-page-control.lo libcomm_la-page-observer.lo \
-	libcomm_la-url-query.lo libcomm_la-auth.lo \
-	libcomm_la-auth-basic.lo libcomm_la-auth-oauth2.lo \
+	libcomm_la-comm-logs.lo libcomm_la-util.lo \
+	libcomm_la-util-openssl.lo libcomm_la-page-control.lo \
+	libcomm_la-page-observer.lo libcomm_la-url-query.lo \
+	libcomm_la-auth.lo libcomm_la-auth-basic.lo \
+	libcomm_la-auth-basic-observer.lo libcomm_la-auth-oauth2.lo \
 	libcomm_la-oauth2-authorize-observer.lo \
 	libcomm_la-oauth2-code-observer.lo \
-	libcomm_la-oauth2-token-observer.lo libcomm_la-storage.lo \
+	libcomm_la-oauth2-token-observer.lo \
+	libcomm_la-oauth2-rfc6749.lo libcomm_la-storage.lo \
 	libcomm_la-storage-mem.lo libcomm_la-comm-client.lo \
-	libcomm_la-comm-basic-client.lo libcomm_la-client-observer.lo
+	libcomm_la-comm-basic-client.lo \
+	libcomm_la-comm-oauth2-client.lo libcomm_la-client-observer.lo \
+	libcomm_la-oauth2-client-observer.lo
 am__objects_2 = libcomm_la-qlist.lo libcomm_la-qlisttbl.lo \
 	libcomm_la-qhasharr.lo libcomm_la-qhashtbl.lo \
 	libcomm_la-qvector.lo libcomm_la-qqueue.lo \
@@ -142,7 +147,9 @@ am__objects_2 = libcomm_la-qlist.lo libcomm_la-qlisttbl.lo \
 	libcomm_la-qconfig.lo libcomm_la-qaconf.lo libcomm_la-qlog.lo \
 	libcomm_la-qhttpclient.lo libcomm_la-qdatabase.lo \
 	libcomm_la-ad_server.lo libcomm_la-ad_http_handler.lo
-am__objects_3 = libcomm_la-file.lo libcomm_la-timeval.lo \
+am__objects_3 = libcomm_la-json_reader.lo libcomm_la-json_writer.lo \
+	libcomm_la-json_value.lo
+am__objects_4 = libcomm_la-file.lo libcomm_la-timeval.lo \
 	libcomm_la-base64.lo libcomm_la-hostip.lo \
 	libcomm_la-progress.lo libcomm_la-formdata.lo \
 	libcomm_la-cookie.lo libcomm_la-http.lo libcomm_la-sendf.lo \
@@ -196,7 +203,7 @@ am__objects_3 = libcomm_la-file.lo libcomm_la-timeval.lo \
 	libcomm_la-axtls.lo libcomm_la-cyassl.lo \
 	libcomm_la-curl_schannel.lo libcomm_la-curl_darwinssl.lo
 am_libcomm_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3)
+	$(am__objects_3) $(am__objects_4)
 libcomm_la_OBJECTS = $(am_libcomm_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -414,21 +421,26 @@ SRC_CommServer = \
     $(top_srcdir)/src/server/comm-server.cpp \
     $(top_srcdir)/src/server/ad-server-cb.cpp \
     $(top_srcdir)/src/logs/comm-logs.cpp \
+    $(top_srcdir)/src/utils/util.cpp \
     $(top_srcdir)/src/utils/util-openssl.cpp \
     $(top_srcdir)/src/server/page-control.cpp \
     $(top_srcdir)/src/server/page-observer.cpp \
     $(top_srcdir)/src/server/url-query.cpp \
     $(top_srcdir)/src/server/auth/auth.cpp \
     $(top_srcdir)/src/server/auth/basic/auth-basic.cpp \
+    $(top_srcdir)/src/server/auth/basic/auth-basic-observer.cpp \
     $(top_srcdir)/src/server/auth/oauth2/auth-oauth2.cpp \
     $(top_srcdir)/src/server/auth/oauth2/oauth2-authorize-observer.cpp \
     $(top_srcdir)/src/server/auth/oauth2/oauth2-code-observer.cpp \
     $(top_srcdir)/src/server/auth/oauth2/oauth2-token-observer.cpp \
+    $(top_srcdir)/src/server/auth/oauth2/oauth2-rfc6749.cpp \
     $(top_srcdir)/src/server/auth/storage/storage.cpp \
     $(top_srcdir)/src/server/auth/storage/storage-mem.cpp \
     $(top_srcdir)/src/client/comm-client.cpp \
     $(top_srcdir)/src/client/comm-basic-client.cpp \
-    $(top_srcdir)/src/client/client-observer.cpp
+    $(top_srcdir)/src/client/comm-oauth2-client.cpp \
+    $(top_srcdir)/src/client/client-observer.cpp \
+    $(top_srcdir)/src/client/oauth2-client-observer.cpp
 
 SRC_INCLUDE = \
     -I$(top_srcdir)/src/server \
@@ -444,11 +456,12 @@ lib_LTLIBRARIES = libcomm.la
 libcomm_la_LDFLAGS = -lssl -lcrypto -lpthread -levent -levent_openssl -levent_pthreads -lm -lz -ldl
 libcomm_la_CFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 \
 	-D_GNU_SOURCE -g -DBUILD_DEBUG -DBUILD_EXTENSION \
-	$(SRC_INCLUDE) $(SRC_LIBASYNCD_INCLUDE) $(SRC_CURL_INCLUDE) \
+	$(SRC_INCLUDE) $(SRC_LIBASYNCD_INCLUDE) \
+	$(SRC_LIBSONCPP_INCLUDE) $(SRC_CURL_INCLUDE) \
 	$(SRC_CURL_CFLAGS)
 libcomm_la_CXXFLAGS = $(libcomm_la_CFLAGS)
 libcomm_la_SOURCES = $(SRC_CommServer) $(SRC_LIBASYNCD_SRC) \
-	$(SRC_CURL_SRC)
+	$(SRC_LIBJSONCPP_SRC) $(SRC_CURL_SRC)
 SRC_LIBASYNCD_SRC = \
     $(top_srcdir)/lib/libasyncd/lib/qlibc/src/containers/qlist.c \
     $(top_srcdir)/lib/libasyncd/lib/qlibc/src/containers/qlisttbl.c \
@@ -483,6 +496,15 @@ SRC_LIBASYNCD_INCLUDE = \
     -I$(top_srcdir)/lib/libasyncd/lib/qlibc/src/internal/md5 \
     -I$(top_srcdir)/lib/libasyncd/lib/qlibc/include/qlibc \
     -I$(top_srcdir)/lib/libasyncd/lib/qlibc/include
+
+SRC_LIBJSONCPP_SRC = \
+    $(top_srcdir)/lib/jsoncpp/src/lib_json/json_reader.cpp \
+    $(top_srcdir)/lib/jsoncpp/src/lib_json/json_writer.cpp \
+    $(top_srcdir)/lib/jsoncpp/src/lib_json/json_value.cpp
+
+SRC_LIBSONCPP_INCLUDE = \
+    -I$(top_srcdir)/lib/jsoncpp/include \
+    -I$(top_srcdir)/lib/jsoncpp/src/lib_json
 
 SRC_CURL_SRC = \
     $(top_srcdir)/lib/curl/lib/file.c \
@@ -616,7 +638,7 @@ all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .cpp .lo .o .obj
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/./config.mak $(top_srcdir)/lib/libasyncd/config.mak $(top_srcdir)/lib/curl/config.mak $(am__configure_deps)
+$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/./config.mak $(top_srcdir)/lib/libasyncd/config.mak $(top_srcdir)/lib/jsoncpp/config.mak $(top_srcdir)/lib/curl/config.mak $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -637,7 +659,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe);; \
 	esac;
-$(srcdir)/./config.mak $(top_srcdir)/lib/libasyncd/config.mak $(top_srcdir)/lib/curl/config.mak:
+$(srcdir)/./config.mak $(top_srcdir)/lib/libasyncd/config.mak $(top_srcdir)/lib/jsoncpp/config.mak $(top_srcdir)/lib/curl/config.mak:
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
@@ -698,6 +720,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-amigaos.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-asyn-ares.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-asyn-thread.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-auth-basic-observer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-auth-basic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-auth-oauth2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-auth.Plo@am__quote@
@@ -708,6 +731,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-comm-basic-client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-comm-client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-comm-logs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-comm-oauth2-client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-comm-server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-conncache.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-connect.Plo@am__quote@
@@ -767,6 +791,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-imap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-inet_ntop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-inet_pton.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-json_reader.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-json_value.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-json_writer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-krb5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-ldap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-llist.Plo@am__quote@
@@ -781,7 +808,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-nonblock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-nss.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-oauth2-authorize-observer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-oauth2-client-observer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-oauth2-code-observer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-oauth2-rfc6749.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-oauth2-token-observer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-openldap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-openssl.Plo@am__quote@
@@ -845,6 +874,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-url-query.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-url.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-util-openssl.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-version.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-vtls.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcomm_la-warnless.Plo@am__quote@
@@ -1894,6 +1924,13 @@ libcomm_la-comm-logs.lo: $(top_srcdir)/src/logs/comm-logs.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-comm-logs.lo `test -f '$(top_srcdir)/src/logs/comm-logs.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/logs/comm-logs.cpp
 
+libcomm_la-util.lo: $(top_srcdir)/src/utils/util.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-util.lo -MD -MP -MF $(DEPDIR)/libcomm_la-util.Tpo -c -o libcomm_la-util.lo `test -f '$(top_srcdir)/src/utils/util.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/utils/util.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-util.Tpo $(DEPDIR)/libcomm_la-util.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/src/utils/util.cpp' object='libcomm_la-util.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-util.lo `test -f '$(top_srcdir)/src/utils/util.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/utils/util.cpp
+
 libcomm_la-util-openssl.lo: $(top_srcdir)/src/utils/util-openssl.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-util-openssl.lo -MD -MP -MF $(DEPDIR)/libcomm_la-util-openssl.Tpo -c -o libcomm_la-util-openssl.lo `test -f '$(top_srcdir)/src/utils/util-openssl.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/utils/util-openssl.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-util-openssl.Tpo $(DEPDIR)/libcomm_la-util-openssl.Plo
@@ -1936,6 +1973,13 @@ libcomm_la-auth-basic.lo: $(top_srcdir)/src/server/auth/basic/auth-basic.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-auth-basic.lo `test -f '$(top_srcdir)/src/server/auth/basic/auth-basic.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/server/auth/basic/auth-basic.cpp
 
+libcomm_la-auth-basic-observer.lo: $(top_srcdir)/src/server/auth/basic/auth-basic-observer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-auth-basic-observer.lo -MD -MP -MF $(DEPDIR)/libcomm_la-auth-basic-observer.Tpo -c -o libcomm_la-auth-basic-observer.lo `test -f '$(top_srcdir)/src/server/auth/basic/auth-basic-observer.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/server/auth/basic/auth-basic-observer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-auth-basic-observer.Tpo $(DEPDIR)/libcomm_la-auth-basic-observer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/src/server/auth/basic/auth-basic-observer.cpp' object='libcomm_la-auth-basic-observer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-auth-basic-observer.lo `test -f '$(top_srcdir)/src/server/auth/basic/auth-basic-observer.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/server/auth/basic/auth-basic-observer.cpp
+
 libcomm_la-auth-oauth2.lo: $(top_srcdir)/src/server/auth/oauth2/auth-oauth2.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-auth-oauth2.lo -MD -MP -MF $(DEPDIR)/libcomm_la-auth-oauth2.Tpo -c -o libcomm_la-auth-oauth2.lo `test -f '$(top_srcdir)/src/server/auth/oauth2/auth-oauth2.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/server/auth/oauth2/auth-oauth2.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-auth-oauth2.Tpo $(DEPDIR)/libcomm_la-auth-oauth2.Plo
@@ -1963,6 +2007,13 @@ libcomm_la-oauth2-token-observer.lo: $(top_srcdir)/src/server/auth/oauth2/oauth2
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/src/server/auth/oauth2/oauth2-token-observer.cpp' object='libcomm_la-oauth2-token-observer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-oauth2-token-observer.lo `test -f '$(top_srcdir)/src/server/auth/oauth2/oauth2-token-observer.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/server/auth/oauth2/oauth2-token-observer.cpp
+
+libcomm_la-oauth2-rfc6749.lo: $(top_srcdir)/src/server/auth/oauth2/oauth2-rfc6749.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-oauth2-rfc6749.lo -MD -MP -MF $(DEPDIR)/libcomm_la-oauth2-rfc6749.Tpo -c -o libcomm_la-oauth2-rfc6749.lo `test -f '$(top_srcdir)/src/server/auth/oauth2/oauth2-rfc6749.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/server/auth/oauth2/oauth2-rfc6749.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-oauth2-rfc6749.Tpo $(DEPDIR)/libcomm_la-oauth2-rfc6749.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/src/server/auth/oauth2/oauth2-rfc6749.cpp' object='libcomm_la-oauth2-rfc6749.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-oauth2-rfc6749.lo `test -f '$(top_srcdir)/src/server/auth/oauth2/oauth2-rfc6749.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/server/auth/oauth2/oauth2-rfc6749.cpp
 
 libcomm_la-storage.lo: $(top_srcdir)/src/server/auth/storage/storage.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-storage.lo -MD -MP -MF $(DEPDIR)/libcomm_la-storage.Tpo -c -o libcomm_la-storage.lo `test -f '$(top_srcdir)/src/server/auth/storage/storage.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/server/auth/storage/storage.cpp
@@ -1992,12 +2043,47 @@ libcomm_la-comm-basic-client.lo: $(top_srcdir)/src/client/comm-basic-client.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-comm-basic-client.lo `test -f '$(top_srcdir)/src/client/comm-basic-client.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/client/comm-basic-client.cpp
 
+libcomm_la-comm-oauth2-client.lo: $(top_srcdir)/src/client/comm-oauth2-client.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-comm-oauth2-client.lo -MD -MP -MF $(DEPDIR)/libcomm_la-comm-oauth2-client.Tpo -c -o libcomm_la-comm-oauth2-client.lo `test -f '$(top_srcdir)/src/client/comm-oauth2-client.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/client/comm-oauth2-client.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-comm-oauth2-client.Tpo $(DEPDIR)/libcomm_la-comm-oauth2-client.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/src/client/comm-oauth2-client.cpp' object='libcomm_la-comm-oauth2-client.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-comm-oauth2-client.lo `test -f '$(top_srcdir)/src/client/comm-oauth2-client.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/client/comm-oauth2-client.cpp
+
 libcomm_la-client-observer.lo: $(top_srcdir)/src/client/client-observer.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-client-observer.lo -MD -MP -MF $(DEPDIR)/libcomm_la-client-observer.Tpo -c -o libcomm_la-client-observer.lo `test -f '$(top_srcdir)/src/client/client-observer.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/client/client-observer.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-client-observer.Tpo $(DEPDIR)/libcomm_la-client-observer.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/src/client/client-observer.cpp' object='libcomm_la-client-observer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-client-observer.lo `test -f '$(top_srcdir)/src/client/client-observer.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/client/client-observer.cpp
+
+libcomm_la-oauth2-client-observer.lo: $(top_srcdir)/src/client/oauth2-client-observer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-oauth2-client-observer.lo -MD -MP -MF $(DEPDIR)/libcomm_la-oauth2-client-observer.Tpo -c -o libcomm_la-oauth2-client-observer.lo `test -f '$(top_srcdir)/src/client/oauth2-client-observer.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/client/oauth2-client-observer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-oauth2-client-observer.Tpo $(DEPDIR)/libcomm_la-oauth2-client-observer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/src/client/oauth2-client-observer.cpp' object='libcomm_la-oauth2-client-observer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-oauth2-client-observer.lo `test -f '$(top_srcdir)/src/client/oauth2-client-observer.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/client/oauth2-client-observer.cpp
+
+libcomm_la-json_reader.lo: $(top_srcdir)/lib/jsoncpp/src/lib_json/json_reader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-json_reader.lo -MD -MP -MF $(DEPDIR)/libcomm_la-json_reader.Tpo -c -o libcomm_la-json_reader.lo `test -f '$(top_srcdir)/lib/jsoncpp/src/lib_json/json_reader.cpp' || echo '$(srcdir)/'`$(top_srcdir)/lib/jsoncpp/src/lib_json/json_reader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-json_reader.Tpo $(DEPDIR)/libcomm_la-json_reader.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/lib/jsoncpp/src/lib_json/json_reader.cpp' object='libcomm_la-json_reader.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-json_reader.lo `test -f '$(top_srcdir)/lib/jsoncpp/src/lib_json/json_reader.cpp' || echo '$(srcdir)/'`$(top_srcdir)/lib/jsoncpp/src/lib_json/json_reader.cpp
+
+libcomm_la-json_writer.lo: $(top_srcdir)/lib/jsoncpp/src/lib_json/json_writer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-json_writer.lo -MD -MP -MF $(DEPDIR)/libcomm_la-json_writer.Tpo -c -o libcomm_la-json_writer.lo `test -f '$(top_srcdir)/lib/jsoncpp/src/lib_json/json_writer.cpp' || echo '$(srcdir)/'`$(top_srcdir)/lib/jsoncpp/src/lib_json/json_writer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-json_writer.Tpo $(DEPDIR)/libcomm_la-json_writer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/lib/jsoncpp/src/lib_json/json_writer.cpp' object='libcomm_la-json_writer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-json_writer.lo `test -f '$(top_srcdir)/lib/jsoncpp/src/lib_json/json_writer.cpp' || echo '$(srcdir)/'`$(top_srcdir)/lib/jsoncpp/src/lib_json/json_writer.cpp
+
+libcomm_la-json_value.lo: $(top_srcdir)/lib/jsoncpp/src/lib_json/json_value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -MT libcomm_la-json_value.lo -MD -MP -MF $(DEPDIR)/libcomm_la-json_value.Tpo -c -o libcomm_la-json_value.lo `test -f '$(top_srcdir)/lib/jsoncpp/src/lib_json/json_value.cpp' || echo '$(srcdir)/'`$(top_srcdir)/lib/jsoncpp/src/lib_json/json_value.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcomm_la-json_value.Tpo $(DEPDIR)/libcomm_la-json_value.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$(top_srcdir)/lib/jsoncpp/src/lib_json/json_value.cpp' object='libcomm_la-json_value.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcomm_la_CXXFLAGS) $(CXXFLAGS) -c -o libcomm_la-json_value.lo `test -f '$(top_srcdir)/lib/jsoncpp/src/lib_json/json_value.cpp' || echo '$(srcdir)/'`$(top_srcdir)/lib/jsoncpp/src/lib_json/json_value.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -2,6 +2,9 @@
 #include "comm-basic-client.h"
 #include "comm-logs.h"
 #include "client-observer.h"
+#include "comm-oauth2-client.h"
+#include "auth-oauth2.h"
+#include "oauth2-client-observer.h"
 #include <algorithm>
 
 using namespace std;
@@ -69,7 +72,7 @@ void CommClient::SetupCurl(CURL *curl,
 
     struct curl_slist *headers = NULL;
 
-    SetExtraHeaders(curl, headers);
+    SetExtraHeaders(curl, &headers);
 
     if (!content_type.empty()){
         string buf = "Content-Type: " + content_type;
@@ -103,9 +106,7 @@ bool CommClient::SyncAction(std::string url, bool post_action, void *data, int d
     Evt("http code : %d", http_code);
 
     if(res != CURLE_OK || http_code != 200){
-        if (observer){
-            observer->Response(url, (void*)buf, recv_buf_size, http_code);
-        }
+        CallResponse(url, (void*)buf, recv_buf_size, http_code);
         ResetRecvBuf();
         return true;
     }
@@ -115,10 +116,7 @@ bool CommClient::SyncAction(std::string url, bool post_action, void *data, int d
 
     curl_easy_cleanup(curl);
 
-    if (observer){
-        observer->Response(url, (void*)buf, recv_buf_size, http_code);
-    }
-
+    CallResponse(url, (void*)buf, recv_buf_size, http_code);
     ResetRecvBuf();
 
     return true;
@@ -147,10 +145,31 @@ bool CommClient::AsyncAction(std::string url, bool post_action, void *data, int 
     return true;
 }
 
-void CommClient::SetExtraHeaders(CURL *curl, struct curl_slist *headers){
+void CommClient::SetExtraHeaders(CURL *curl, struct curl_slist **headers){
     Log("SetExtraHeaders");
 }
 
+void CommClient::CallResponse(std::string url, void *data, int len, int code){
+    if (!observer)
+        return;
+
+    if (OAuth2ClientObserver* oauth2observer = dynamic_cast<OAuth2ClientObserver*>(observer)) {
+        Log("oauth 2.0 client observer");
+        if (url.find(OAUTH2_AUTHORIZE) != string::npos){
+            oauth2observer->AuthorizeResponse(data, len, code);
+        }
+        else if (url.find(OAUTH2_TOKEN) != string::npos){
+            oauth2observer->TokenResponse(data, len, code);
+        }
+        else {
+            oauth2observer->Response(url, data, len, code);
+        }
+    }
+    else{
+        Log("normal client observer");
+        observer->Response(url, data, len, code);
+    }
+}
 ///////////////////////////////////////////////////////////////
 // public
 ///////////////////////////////////////////////////////////////
@@ -179,6 +198,17 @@ CommClient::~CommClient(){
     }
 
     cmds.clear();
+}
+
+void CommClient::SetObserver(ClientObserver* observer){
+    this->observer = observer;
+
+    if (OAuth2Client* oauth2_client = dynamic_cast<OAuth2Client*>(this)){
+        Log("OAuth 2.0 Client");
+        if (OAuth2ClientObserver* oauth2observer = dynamic_cast<OAuth2ClientObserver*>(observer)){
+            oauth2observer->SetOAuth2Client(oauth2_client);
+        }
+    }
 }
 
 bool CommClient::Get(std::string url){
@@ -227,12 +257,8 @@ void CommClient::PollingAsyncAction(){
                 int http_code = 0;
                 curl_easy_getinfo(cmd->GetCurl(), CURLINFO_RESPONSE_CODE, &http_code);
 
-                if (observer){
-                    observer->Response(cmd->GetUrl(), 
-                                       (void*)buf, 
-                                       recv_buf_size, 
-                                       http_code);
-                }
+                CallResponse(cmd->GetUrl(), (void*)buf, recv_buf_size, http_code);
+
                 ResetRecvBuf();
 
                 curl_multi_remove_handle(multi, cmd->GetCurl());

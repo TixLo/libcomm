@@ -65,6 +65,10 @@ public:
 public:
     static void SetServerType(ServerType type);
 
+    static bool IsHttps(){
+        return (type == kHttps);
+    }
+
     static CommServer* GetInstance();
 
 private:

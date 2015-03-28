@@ -17,6 +17,8 @@ public:
 
     virtual bool AuthorizingHeaders(ad_conn_t *conn) = 0;
 
+    virtual void TimePassing(double delta) = 0;
+
     Storage* GetStorage(){
         return storage;
     }

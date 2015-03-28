@@ -16,11 +16,22 @@ public:
 
     static Storage* CreateStorage(StorageType type);
 
+    virtual void TimePassing(double current_time) = 0;
+
     virtual void AddAccount(std::string username, std::string password) = 0;
 
     virtual void RemoveAccount(std::string username) = 0;
 
     virtual bool VerifyAccount(std::string username, std::string password) = 0;
+
+    virtual void AddSession(std::string client_id,
+                            std::string access_token,
+                            std::string redirect_uri,
+                            int expiration) = 0;
+
+    virtual void RemoveSession(std::string client_id) = 0;
+
+    virtual bool VerifyAccessToken(std::string access_token) = 0;
 private:
 };
 

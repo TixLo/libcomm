@@ -11,6 +11,8 @@ public:
 
     bool AuthorizingHeaders(ad_conn_t *conn);
 
+    void TimePassing(double delta){};
+
 private:
 
 };

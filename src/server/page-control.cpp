@@ -35,18 +35,21 @@ void PageControl::Detach(PageObserver *observer){
     pages.erase(remove(pages.begin(), pages.end(), observer), pages.end());
 }
 
-PageObserver* PageControl::Notify(HttpMethod method, char *path, char *query, void *field, int field_len){
+PageObserver* PageControl::GetObserver(HttpMethod method, char *path){
     for(vector<PageObserver*>::const_iterator iter = pages.begin(); iter != pages.end(); ++iter){
         if(*iter != 0){
             PageObserver *observer = (PageObserver*)(*iter);
             if (!observer->Equal(method, path))
                 continue;
 
-            UrlQuery url_query(query);
-            observer->Listen(path, url_query, field, field_len);
             return observer;
         }
     }
 
     return NULL;
+}
+
+void PageControl::Notify(PageObserver* observer, char *path, char *query, void *field, int field_len){
+    UrlQuery url_query(query);
+    observer->Listen(path, url_query, field, field_len);
 }

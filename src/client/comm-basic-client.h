@@ -16,7 +16,7 @@ public:
     COMM_SYNTHESIZE(std::string, password, Password)
 
 protected:
-    virtual void SetExtraHeaders(CURL *curl, struct curl_slist *headers);
+    virtual void SetExtraHeaders(CURL *curl, struct curl_slist **headers);
     
 private:
 };

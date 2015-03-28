@@ -6,6 +6,7 @@
 #include "url-query.h"
 #include "comm-macros.h"
 #include <string>
+#include <stdlib.h>
 #include <map>
 
 class PageObserver{
@@ -20,23 +21,42 @@ public:
 
     void SetHeader(std::string header, std::string value);
 
+    void SetOnceHeader(std::string header, std::string value);
+
     std::map<std::string, std::string> GetHeaders(){
         return headers;
+    }
+
+    std::map<std::string, std::string> GetOnceHeaders(){
+        return once_headers;
     }
 
     COMM_SYNTHESIZE(std::string, path, Path)
     COMM_SYNTHESIZE(std::string, mime, MimeType)
     COMM_SYNTHESIZE(HttpMethod, method, Method)
 
-    // weak reference
+    void SetResponse(int code){
+        SetResponse(code, NULL, 0);
+    }
+
     void SetResponse(int code, void *response, int response_len){
         this->response_code = code;
-        this->response = response;
-        this->response_len = response_len;
+        if (this->response)
+            delete [] this->response;
+
+        if (response){
+            this->response = new char[response_len];
+            memcpy(this->response, response, response_len);
+            this->response_len = response_len;
+        }
+        else{
+            this->response = NULL;
+            this->response_len = 0;
+        }
     }
 
     void *GetResponse(){
-        return response;
+        return (void*)response;
     }
 
     int GetResponseLength(){
@@ -52,7 +72,9 @@ public:
 private:
     std::map<std::string, std::string> headers;
 
-    void *response;
+    std::map<std::string, std::string> once_headers;
+
+    char *response;
 
     int response_len;
 
