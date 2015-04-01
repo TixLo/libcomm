@@ -15,10 +15,11 @@ LOCAL_CFLAGS    := -D_GNU_SOURCE \
                    -DHAVE_CONFIG_H \
                    -DBUILD_EXTENSION \
                    -fvisibility=hidden
-#                   -DSECURE_DB
 
 LOCAL_SRC_FILES := \
-    lib/cJSON/cJSON.c \
+    lib/jsoncpp/src/lib_json/json_reader.cpp \
+    lib/jsoncpp/src/lib_json/json_writer.cpp \
+    lib/jsoncpp/src/lib_json/json_value.cpp \
     lib/curl/lib/file.c \
     lib/curl/lib/timeval.c \
     lib/curl/lib/base64.c \
@@ -185,35 +186,36 @@ LOCAL_SRC_FILES := \
     lib/libasyncd/lib/qlibc/src/extensions/qdatabase.c \
     lib/libasyncd/src/ad_server.c \
     lib/libasyncd/src/ad_http_handler.c \
-    lib/radb/radb.c \
-    lib/radb/spmemvfs.c \
-    lib/radb/sqlite3.c \
-    src/log/log.c \
-    src/utils/list.c \
-    src/utils/openssl_base64.c \
-    src/utils/openssl_aes.c \
-    src/utils/openssl_hash.c \
-    src/utils/url_parser.c \
-    src/utils/netlink.c \
-    src/utils/utils.c \
-    src/auth/auth.c \
-    src/auth/basic/basic.c \
-    src/auth/oauth2/oauth2.c \
-    src/server/server.c \
-    src/server/server_auth.c \
-    src/auth/db/auth_db.c \
-    src/auth/oauth2/oauth2_rfc6749.c \
-    src/auth/oauth2/oauth2_session.c \
-    src/client/client.c \
-    src/client/basic/basic_client.c \
-    src/client/oauth2/oauth2_client.c \
-    controlflow.cpp
+    src/server/comm-server.cpp \
+    src/server/ad-server-cb.cpp \
+    src/logs/comm-logs.cpp \
+    src/utils/util.cpp \
+    src/utils/util-openssl.cpp \
+    src/server/page-control.cpp \
+    src/server/page-observer.cpp \
+    src/server/url-query.cpp \
+    src/server/auth/auth.cpp \
+    src/server/auth/basic/auth-basic.cpp \
+    src/server/auth/basic/auth-basic-observer.cpp \
+    src/server/auth/oauth2/auth-oauth2.cpp \
+    src/server/auth/oauth2/oauth2-authorize-observer.cpp \
+    src/server/auth/oauth2/oauth2-code-observer.cpp \
+    src/server/auth/oauth2/oauth2-token-observer.cpp \
+    src/server/auth/oauth2/oauth2-rfc6749.cpp \
+    src/server/auth/storage/storage.cpp \
+    src/server/auth/storage/storage-mem.cpp \
+    src/client/comm-client.cpp \
+    src/client/comm-basic-client.cpp \
+    src/client/comm-oauth2-client.cpp \
+    src/client/client-observer.cpp \
+    src/client/oauth2-client-observer.cpp
 
 LOCAL_SHARED_LIBRARIES := liblog libssl libcrypto libdl libz
 
 LOCAL_C_INCLUDES += \
     $(JNI_H_INCLUDE) \
-    $(LOCAL_PATH)/lib/cJSON \
+    $(LOCAL_PATH)/lib/jsoncpp/include \
+    $(LOCAL_PATH)/lib/jsoncpp/src/lib_json
     $(LOCAL_PATH)/lib/curl/include \
     $(LOCAL_PATH)/lib/curl/lib \
     $(LOCAL_PATH)/lib/curl/lib/vtls \
@@ -225,24 +227,15 @@ LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/lib/libevent/include \
     $(LOCAL_PATH)/lib/libevent/android \
     $(LOCAL_PATH)/lib/libevent \
-    $(LOCAL_PATH)/lib/radb \
-    $(LOCAL_PATH)/src/log \
-    $(LOCAL_PATH)/src/utils \
     $(LOCAL_PATH)/src/server \
-    $(LOCAL_PATH)/src/auth \
-    $(LOCAL_PATH)/src/client \
-    $(LOCAL_PATH)/../../openssl/include \
-    $(LOCAL_PATH)/../../zlib
-#
-# Android L (64 bits)
-#
-#LOCAL_SRC_FILES += lib/curl/lib/android_64/ifaddrs.c
-#LOCAL_C_INCLUDES += $(LOCAL_PATH)/lib/curl/lib/android_64
-#LOCAL_CFLAGS += -DANDROID_L
+    $(LOCAL_PATH)/src/server/auth \
+    $(LOCAL_PATH)/src/server/auth/basic \
+    $(LOCAL_PATH)/src/server/auth/oauth2 \
+    $(LOCAL_PATH)/src/server/auth/storage \
+    $(LOCAL_PATH)/src/logs \
+    $(LOCAL_PATH)/src/utils \
+    $(LOCAL_PATH)/src/client 
 
-#
-# Android KK (32 bits)
-#
 LOCAL_SRC_FILES += lib/curl/lib/android_32/ifaddrs.c
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/lib/curl/lib/android_32
 

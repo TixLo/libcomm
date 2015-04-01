@@ -56,6 +56,9 @@ public:
     void RemoveSession(std::string client_id);
 
     bool VerifyAccessToken(std::string access_token);
+
+    std::string GetAccessToken(std::string client_id);
+    
 private:
     std::vector<Account*> accounts;
 

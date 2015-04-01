@@ -32,6 +32,8 @@ public:
     virtual void RemoveSession(std::string client_id) = 0;
 
     virtual bool VerifyAccessToken(std::string access_token) = 0;
+
+    virtual std::string GetAccessToken(std::string client_id) = 0;
 private:
 };
 

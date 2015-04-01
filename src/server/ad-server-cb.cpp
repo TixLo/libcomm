@@ -69,6 +69,7 @@ static int CommonDispatchHandler(HttpMethod method, short event, ad_conn_t *conn
     //
     PageObserver *observer = control->GetObserver(method, path);
     if (!observer){
+        free(field);
         return ServeNotImplementedHandler(event, conn, userdata);
     }
 
@@ -81,6 +82,7 @@ static int CommonDispatchHandler(HttpMethod method, short event, ad_conn_t *conn
             basic_observer->Unauthorized();
         }
         else{
+            free(field);
             return ServerUnauthorizedHandler(event, conn, userdata);
         }
     }
@@ -120,6 +122,9 @@ static int CommonDispatchHandler(HttpMethod method, short event, ad_conn_t *conn
                      observer->GetMimeType().c_str(), 
                      observer->GetResponse(), 
                      observer->GetResponseLength());
+
+    free(field);
+    
     // return ad_http_is_keepalive_request(conn) ? AD_DONE : AD_CLOSE;
     return AD_CLOSE; 
 }

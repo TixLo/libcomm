@@ -1,4 +1,5 @@
 #include "oauth2-rfc6749.h"
+#include "auth-oauth2.h"
 #include "page-observer.h"
 #include "comm-logs.h"
 #include "comm-server.h"
@@ -8,6 +9,7 @@
 #include "json/reader.h"
 #include "util.h"
 #include "util-openssl.h"
+#include "storage.h"
 
 #include <algorithm>
 
@@ -48,18 +50,20 @@ void OAuth2Rfc6749::TimePassing(double delta){
         if (!(*iter)->IsExpired(delta))
             continue;
 
-        Log("remove code : %s", (*iter)->GetCode().c_str());
+        // Log("remove code : %s", (*iter)->GetCode().c_str());
+        delete (*iter);
         existed_codes.erase(remove(existed_codes.begin(), existed_codes.end(), (*iter)), existed_codes.end());
         break;
     }
 }
 
-void OAuth2Rfc6749::RemoveCode(std::string code){
+void OAuth2Rfc6749::RemoveCode(string code){
     for(vector<OAuth2Code*>::const_iterator iter = existed_codes.begin(); iter != existed_codes.end(); ++iter){
         if(!*iter)
             continue;
 
         if (!(*iter)->GetCode().compare(code)){
+            delete (*iter);
             existed_codes.erase(remove(existed_codes.begin(), existed_codes.end(), (*iter)), existed_codes.end());
             break;
         }
@@ -142,26 +146,37 @@ OAuth2Code* OAuth2Rfc6749::Authorize(UrlQuery &query){
     string scope = query.ParamForKey("scope");
     string state = query.ParamForKey("state");
 
-    // check client_id
-
     //
     // generate code
     //
-    OAuth2Code *code_info = new OAuth2Code;
+    OAuth2Code *code_info = new OAuth2Code();
     code_info->SetRedirectUri(redirect_uri);
     code_info->SetClientId(client_id);
     code_info->SetRemainingTime(CODE_EXPIRATION);
 
-    string t = patch::to_string((long long)Util::GetCurrentTime());
-    string pattern = t + "-" + redirect_uri + "-" + client_id;
+    // check client_id
+    Storage *storage = oauth2->GetStorage();
+    string access_token;
+    if (storage){
+        access_token = storage->GetAccessToken(client_id);
+    }
 
-    char *code = UtilOpenssl::Hash((void*)pattern.c_str(), pattern.length());
-    if (!code)
-        code_info->SetCode(t); 
-    else
-        code_info->SetCode(code);
+    if (access_token.empty()){
+        string t = patch::to_string((long long)Util::GetCurrentTime());
+        string pattern = t + "-" + redirect_uri + "-" + client_id;
 
-    existed_codes.push_back(code_info);
+        char *code = UtilOpenssl::Hash((void*)pattern.c_str(), pattern.length());
+        if (!code)
+            code_info->SetCode(t); 
+        else{
+            code_info->SetCode(code);
+            delete []code;
+        }
+        existed_codes.push_back(code_info);
+    }
+    else{
+        code_info->SetAccessToken(access_token);
+    }
     return code_info;
 }
 
@@ -191,7 +206,10 @@ char* OAuth2Rfc6749::GetToken(UrlQuery &query){
     root["customized"] = "YourCustomizedData";
 
     // 3. convert to string
-    std::string uncrypted_access_token = patch::to_string(root);
+    string uncrypted_access_token;
+    {
+        uncrypted_access_token = patch::to_string(root);
+    }
     Log("uncrypted_access_token : %s", uncrypted_access_token.c_str());
 
     // 4. AES encrypt
@@ -211,6 +229,8 @@ char* OAuth2Rfc6749::GetToken(UrlQuery &query){
         free(ciphertext);
         return NULL;
     }
+
+    free(ciphertext);
 
     return access_token;
 }
@@ -234,7 +254,7 @@ bool OAuth2Rfc6749::CheckToken(std::string access_token){
                                    ciphertext_len, 
                                    &plaintext, 
                                    &plaintext_len)){
-        free(ciphertext);
+        delete []ciphertext;
         return false;
     }
 
@@ -245,7 +265,7 @@ bool OAuth2Rfc6749::CheckToken(std::string access_token){
     Json::Reader reader;
     if (!reader.parse(document, root)){
         free(plaintext);
-        free(ciphertext);
+        delete []ciphertext;
         return false;
     }
 
@@ -253,6 +273,6 @@ bool OAuth2Rfc6749::CheckToken(std::string access_token){
     Log("customized value : %s", root.get("customized", "").asCString());
 
     free(plaintext);
-    free(ciphertext);
+    delete []ciphertext;
     return true;
 }

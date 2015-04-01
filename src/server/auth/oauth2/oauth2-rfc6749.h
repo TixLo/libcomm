@@ -8,6 +8,7 @@
 
 class UrlQuery;
 class PageObserver;
+class AuthOAuth2;
 
 typedef enum{
     kInvalidRequest = 0,
@@ -24,6 +25,7 @@ class OAuth2Code{
     COMM_SYNTHESIZE(std::string, redirect_uri, RedirectUri)
     COMM_SYNTHESIZE(std::string, client_id, ClientId)
     COMM_SYNTHESIZE(std::string, code, Code)
+    COMM_SYNTHESIZE(std::string, access_token, AccessToken)
     COMM_SYNTHESIZE(double, remaining_time, RemainingTime)
     bool IsExpired(double delta){
         remaining_time -= delta;
@@ -53,6 +55,8 @@ public:
 
     void TimePassing(double delta);
 
+    COMM_SYNTHESIZE(AuthOAuth2*, oauth2, OAuth2)
+
 private:
     bool VerifyCode(std::string code);
 
@@ -60,6 +64,7 @@ private:
 
 private:
     std::vector<OAuth2Code*> existed_codes;
+
 };
 
 #endif//__OAUTH2_RFC6749_H__

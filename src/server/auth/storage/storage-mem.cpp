@@ -125,3 +125,16 @@ bool StorageMem::VerifyAccessToken(std::string access_token){
     }
     return false;
 }
+
+string StorageMem::GetAccessToken(string client_id){
+    for(vector<OAuth2Session*>::const_iterator iter = sessions.begin(); iter != sessions.end(); ++iter){
+        if(!*iter)
+            continue;
+        
+        if (!(*iter)->GetClientId().compare(client_id)){
+            return (*iter)->GetAccessToken();
+        }
+    }
+
+    return "";
+}

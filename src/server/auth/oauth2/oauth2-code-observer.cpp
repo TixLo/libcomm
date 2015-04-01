@@ -41,7 +41,7 @@ void OAuth2CodeObserver::Listen(char *path, UrlQuery &query, void *field, int fi
         return;
     }
 
-    if (!oauth2->Query(client_id)){
+    if (!rfc6749->GetOAuth2()->Query(client_id)){
         rfc6749->AccessDenied(this, state);
         return;
     }
@@ -52,6 +52,6 @@ void OAuth2CodeObserver::Listen(char *path, UrlQuery &query, void *field, int fi
         root["state"] = state;
     }
 
-    std::string response = patch::to_string(root);
+    string response = patch::to_string(root);
     SetResponse(200, (void*)response.c_str(), response.length());
 }

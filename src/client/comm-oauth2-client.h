@@ -38,6 +38,8 @@ private:
     std::string access_token;
 
     std::string code;
+
+    int expires_in;
 };
 
 #endif//__COMM_OAUTH2_CLIENT_H__

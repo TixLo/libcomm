@@ -6,7 +6,6 @@ AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADER([sys/sockio.h])
-AC_CHECK_HEADER([openssl/ssl.h])
 AC_CHECK_HEADER([event2/event.h])
  
 # Checks for programs.
@@ -32,29 +31,11 @@ AC_PROG_LIBTOOL
 AM_SILENT_RULES([yes])
  
 AM_GNU_GETTEXT_VERSION([0.17])
- 
+
 # Checks for libraries.
 requirement_auth=""
-requirement_auth="${requirement_auth} openssl >= 1.0"
 requirement_auth="${requirement_auth} libevent >= 2.0"
-
-#
-# DEBUG
-#
-AC_ARG_ENABLE(
-    debug,
-    [AC_HELP_STRING([--disable-debug],
-                       [disable debug. (default=enabled)]
-                      )
-    ],
-    [use_debug=$enableval],
-    [use_debug="yes"]
-)
- 
-AM_CONDITIONAL([USE_DEBUG], test "x${use_debug}" = "xyes")
-if test "x$use_debug" = "xyes"; then
-    AC_DEFINE(USE_DEBUG, 1, [Use Debug])
-fi
+requirement_auth="${requirement_auth} openssl >= 1.0"
 
 PKG_CHECK_MODULES([AUTH], [${requirement_auth}])
  
@@ -77,5 +58,5 @@ eval echo "Path...................................... : $exec_prefix"
 eval echo "Binaries.................................. : $exec_prefix/bin"
 echo
 echo "Environment Settings :"
-echo "Enable Debug................................... : $use_debug"
+echo "Enable SSL..................................... : $use_ssl"
 echo

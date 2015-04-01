@@ -21,14 +21,11 @@ AuthOAuth2::AuthOAuth2() : Auth(){
     class_name = "AuthOAuth2";
 
     rfc6749 = new OAuth2Rfc6749();
+    rfc6749->SetOAuth2(this);
+    
     authorize_observer = new OAuth2AuthorizeObserver(rfc6749, OAUTH2_AUTHORIZE, kGet);
-    authorize_observer->SetOAuth2(this);
-
     code_observer = new OAuth2CodeObserver(rfc6749, OAUTH2_CODE, kGet);
-    code_observer->SetOAuth2(this);
-
     token_observer = new OAuth2TokenObserver(rfc6749, OAUTH2_TOKEN, kPost);
-    token_observer->SetOAuth2(this);
 }
 
 AuthOAuth2::~AuthOAuth2(){

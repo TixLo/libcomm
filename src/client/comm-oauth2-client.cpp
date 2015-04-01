@@ -19,6 +19,7 @@ OAuth2Client::OAuth2Client() : client_id(""),
                                token_endpoint(""), 
                                access_token(""),
                                code(""),
+                               expires_in(3600),
                                CommClient(){
     SetContentType("application/x-www-form-urlencoded");
 }
@@ -59,6 +60,8 @@ void OAuth2Client::AuthorizeResponse(void *data, int len, int code){
         }
     }
     this->code = root.get("code", "").asString();
+    this->access_token = root.get("access_token", "").asString();
+    this->expires_in = root.get("expires_in", 3600).asInt();
 }
 
 void OAuth2Client::TokenResponse(void *data, int len, int code){
@@ -104,12 +107,16 @@ bool OAuth2Client::Authorizing(){
     }
 
     Log("code : %s", code.c_str());
-    if (code.empty()){
+    if (code.empty() && access_token.empty()){
         CallResponse(parameter, NULL, 0, 401);
         return false;       
     }
 
     ResetRecvBuf();
+    if (!access_token.empty()){
+        return true;
+    }
+    
     //
     // Get Access Token
     //

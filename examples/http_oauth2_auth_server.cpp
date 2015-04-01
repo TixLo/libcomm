@@ -83,12 +83,6 @@ int main(int argc, char **argv){
     // initialize OAuth2
     auth->Initialize(server);
 
-    // get storage in Auth
-    Storage *storage = auth->GetStorage();
-
-    // add legal account
-    storage->AddAccount("tix","123456");
-
     // get page control
     PageControl *control = server->GetPageControl();
 

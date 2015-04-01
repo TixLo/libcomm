@@ -47,7 +47,7 @@ void OAuth2TokenObserver::Listen(char *path, UrlQuery &query, void *field, int f
         return;
     }
 
-    Storage *storage = oauth2->GetStorage();
+    Storage *storage = rfc6749->GetOAuth2()->GetStorage();
     if (!storage){
         rfc6749->Unauthorized(this, kServerError);
         return;
@@ -72,5 +72,5 @@ void OAuth2TokenObserver::Listen(char *path, UrlQuery &query, void *field, int f
     string response = patch::to_string(root); 
     SetResponse(200, (void*)response.c_str(), response.length());
 
-    free(token);
+    delete []token;
 }

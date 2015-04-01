@@ -6,7 +6,7 @@
 
 class UrlQuery;
 class OAuth2Rfc6749;
-class AuthOAuth2;
+class OAuth2Code;
 
 class OAuth2AuthorizeObserver : public PageObserver{
 public:
@@ -15,15 +15,19 @@ public:
     virtual ~OAuth2AuthorizeObserver();
 
     void Listen(char *path, UrlQuery &query, void *field, int field_len);
-
-    void SetOAuth2(AuthOAuth2 *oauth2){
-        this->oauth2 = oauth2;
-    }
     
 private:
-    OAuth2Rfc6749* rfc6749;
+    void SendCodeResponse(std::string redirect_uri, 
+                          std::string state, 
+                          std::string client_id, 
+                          OAuth2Code *code_info);
 
-    AuthOAuth2 *oauth2;
+    void SendAccessTokenResponse(std::string redirect_uri, 
+                                 std::string state, 
+                                 std::string client_id, 
+                                 OAuth2Code *code_info);
+
+    OAuth2Rfc6749* rfc6749;
 };
 
 #endif//__OAUTH2_AUTHORIZE_OBSERVER_H__
