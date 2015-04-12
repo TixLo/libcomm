@@ -24,7 +24,8 @@ SRC_CommServer = \
     $(top_srcdir)/src/client/oauth2-client-observer.cpp
 
 SRC_INCLUDE = \
-    -I$(top_srcdir)/src/server \
+    -I$(top_srcdir)/src/include
+#    -I$(top_srcdir)/src/server \
     -I$(top_srcdir)/src/server/auth \
     -I$(top_srcdir)/src/server/auth/basic \
     -I$(top_srcdir)/src/server/auth/oauth2 \

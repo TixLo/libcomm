@@ -7,14 +7,7 @@ MKDIR_P     = @MKDIR_P@
 RANLIB      = @RANLIB@
 
 CPPFLAGS   += \
-    -I../src/server \
-    -I../src/server/auth \
-    -I../src/server/auth/basic \
-    -I../src/server/auth/oauth2 \
-    -I../src/server/auth/storage \
-    -I../src/logs \
-    -I../src/utils \
-    -I../src/client \
+    -I../src/include \
     -I../lib/curl/include \
     -I../lib/libasyncd/include/asyncd \
     -I../lib/libasyncd/lib/qlibc/include \
